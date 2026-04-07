@@ -1,86 +1,54 @@
-mod classifier;
-pub use classifier::Classifier;
-
+use crate::classify::OnnxClassifier;
+use crate::config::TaskConfig;
 use anyhow::Result;
 use std::io::{BufRead, BufReader, Write};
-use crate::config;
+use std::os::unix::net::UnixListener;
+use tracing::{error, info};
 
-/// Run as a hot daemon — load model once, serve over unix socket or TCP.
-pub async fn run(task: &str, port: Option<u16>, socket: Option<String>) -> Result<()> {
-    let cfg = config::load(task)?;
-    let gguf = config::gguf_path(task);
-
-    if !gguf.exists() {
-        anyhow::bail!("Model not found: {}. Run: smoltrain export {task}", gguf.display());
+pub fn run(cfg: &TaskConfig) -> Result<()> {
+    let socket_path = &cfg.serve.socket;
+    if std::path::Path::new(socket_path).exists() {
+        std::fs::remove_file(socket_path)?;
     }
 
-    let classifier = Classifier::load(&gguf, &cfg.task.classes)?;
-    println!("Model loaded: {} classes: [{}]",
-        task, cfg.task.classes.join(", "));
+    let mut classifier = OnnxClassifier::load(cfg)?;
+    info!("classifier loaded, listening on {}", socket_path);
 
-    let socket_path = socket
-        .unwrap_or_else(|| cfg.serve.socket.clone());
-
-    if port.is_some() {
-        run_tcp(classifier, port.unwrap()).await
-    } else {
-        run_unix(classifier, &socket_path)
-    }
-}
-
-fn run_unix(classifier: Classifier, path: &str) -> Result<()> {
-    use std::os::unix::net::UnixListener;
-
-    let _ = std::fs::remove_file(path);
-    let listener = UnixListener::bind(path)?;
-    println!("Listening on unix:{path}");
+    let listener = UnixListener::bind(socket_path)?;
+    println!("serving on {socket_path}");
 
     for stream in listener.incoming() {
-        let stream = stream?;
-        let mut reader = BufReader::new(stream.try_clone()?);
-        let mut writer = stream;
-        let mut line = String::new();
-        while reader.read_line(&mut line).unwrap_or(0) > 0 {
-            let input = line.trim();
-            if input.is_empty() { line.clear(); continue; }
-            let label = classifier.classify(input).unwrap_or_else(|_| "unknown".to_string());
-            writeln!(writer, "{label}")?;
-            line.clear();
+        match stream {
+            Ok(stream) => {
+                let mut reader = BufReader::new(stream.try_clone()?);
+                let mut writer = stream;
+                let mut line = String::new();
+                loop {
+                    line.clear();
+                    match reader.read_line(&mut line) {
+                        Ok(0) => break,
+                        Ok(_) => {
+                            let input = line.trim_end_matches('\n').trim_end_matches('\r');
+                            match classifier.classify(input) {
+                                Ok(label) => {
+                                    let _ = writeln!(writer, "{label}");
+                                }
+                                Err(e) => {
+                                    error!("classify error: {e}");
+                                    let _ = writeln!(writer, "ERROR: {e}");
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            error!("read error: {e}");
+                            break;
+                        }
+                    }
+                }
+            }
+            Err(e) => error!("accept error: {e}"),
         }
     }
+
     Ok(())
-}
-
-async fn run_tcp(classifier: Classifier, port: u16) -> Result<()> {
-    use tokio::net::TcpListener;
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as TokioBufReader};
-    use std::sync::Arc;
-
-    let listener = TcpListener::bind(format!("127.0.0.1:{port}")).await?;
-    println!("Listening on 127.0.0.1:{port}");
-
-    let classifier = Arc::new(classifier);
-
-    loop {
-        let (stream, _) = listener.accept().await?;
-        let c = classifier.clone();
-        tokio::spawn(async move {
-            let (reader, mut writer) = stream.into_split();
-            let mut lines = TokioBufReader::new(reader).lines();
-            while let Ok(Some(line)) = lines.next_line().await {
-                let input = line.trim().to_string();
-                if input.is_empty() { continue; }
-                let label = c.classify(&input).unwrap_or_else(|_| "unknown".to_string());
-                let _ = writer.write_all(format!("{label}\n").as_bytes()).await;
-            }
-        });
-    }
-}
-
-/// One-shot classify without daemon — useful for testing or fallback.
-pub fn classify_once(task: &str, input: &str) -> Result<String> {
-    let cfg = config::load(task)?;
-    let gguf = config::gguf_path(task);
-    let classifier = Classifier::load(&gguf, &cfg.task.classes)?;
-    classifier.classify(input)
 }

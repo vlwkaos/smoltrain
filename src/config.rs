@@ -2,69 +2,84 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskConfig {
     pub task: TaskMeta,
     pub base_model: BaseModel,
     pub gen: GenConfig,
     pub train: TrainConfig,
-    pub export: ExportConfig,
     pub serve: ServeConfig,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskMeta {
     pub name: String,
     pub goal: String,
     pub classes: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BaseModel {
     pub repo: String,
-    pub path: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenConfig {
-    pub n_per_class: usize,
-    pub supervisor: SupervisorConfig,
+    pub supervisor_url: String,
+    pub supervisor_model: String,
+    pub api_key_env: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SupervisorConfig {
-    pub provider: String,
-    pub model: String,
-    pub base_url: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrainConfig {
     pub epochs: usize,
-    pub learning_rate: f64,
-    pub lora_rank: usize,
-    pub lora_alpha: usize,
+    pub lr: f64,
     pub batch_size: usize,
     pub max_seq_len: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ExportConfig {
-    pub format: String,
-    pub quantization: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServeConfig {
     pub socket: String,
 }
 
-/// ~/.local/share/smoltrain/<task>/
-pub fn task_dir(name: &str) -> PathBuf {
+impl Default for TaskConfig {
+    fn default() -> Self {
+        Self {
+            task: TaskMeta {
+                name: String::new(),
+                goal: String::new(),
+                classes: vec![],
+            },
+            base_model: BaseModel {
+                repo: "distilbert-base-uncased".to_string(),
+            },
+            gen: GenConfig {
+                supervisor_url: "https://api.anthropic.com/v1/messages".to_string(),
+                supervisor_model: "claude-3-haiku-20240307".to_string(),
+                api_key_env: "ANTHROPIC_API_KEY".to_string(),
+            },
+            train: TrainConfig {
+                epochs: 3,
+                lr: 2e-5,
+                batch_size: 16,
+                max_seq_len: 128,
+            },
+            serve: ServeConfig {
+                socket: String::new(),
+            },
+        }
+    }
+}
+
+pub fn data_dir() -> PathBuf {
     dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("~/.local/share"))
         .join("smoltrain")
-        .join(name)
+}
+
+pub fn task_dir(name: &str) -> PathBuf {
+    data_dir().join(name)
 }
 
 pub fn config_path(name: &str) -> PathBuf {
@@ -72,68 +87,45 @@ pub fn config_path(name: &str) -> PathBuf {
 }
 
 pub fn dataset_path(name: &str) -> PathBuf {
-    task_dir(name).join("train.jsonl")
+    task_dir(name).join("dataset.jsonl")
 }
 
 pub fn model_dir(name: &str) -> PathBuf {
     task_dir(name).join("model")
 }
 
-pub fn gguf_path(name: &str) -> PathBuf {
-    task_dir(name).join(format!("{name}-classifier.gguf"))
+pub fn onnx_dir(name: &str) -> PathBuf {
+    task_dir(name).join("onnx")
+}
+
+pub fn onnx_path(name: &str) -> PathBuf {
+    onnx_dir(name).join("model_int8.onnx")
+}
+
+pub fn tokenizer_path(name: &str) -> PathBuf {
+    onnx_dir(name).join("tokenizer.json")
 }
 
 pub fn load(name: &str) -> Result<TaskConfig> {
     let path = config_path(name);
-    let raw = std::fs::read_to_string(&path)
-        .with_context(|| format!("task '{}' not found at {}", name, path.display()))?;
-    toml::from_str(&raw).context("parse smoltrain.toml")
+    let text = std::fs::read_to_string(&path)
+        .with_context(|| format!("Cannot read config at {}", path.display()))?;
+    let cfg: TaskConfig = toml::from_str(&text)
+        .with_context(|| format!("Invalid TOML in {}", path.display()))?;
+    Ok(cfg)
 }
 
-pub fn new_task(name: &str, goal: &str, classes: &[String], base: &str) -> Result<()> {
+pub fn new_task(name: &str, classes: Vec<String>, goal: String) -> Result<()> {
     let dir = task_dir(name);
     std::fs::create_dir_all(&dir)?;
 
-    let cfg = format!(
-        r#"[task]
-name = "{name}"
-goal = "{goal}"
-classes = [{classes}]
+    let mut cfg = TaskConfig::default();
+    cfg.task.name = name.to_string();
+    cfg.task.classes = classes;
+    cfg.task.goal = goal;
+    cfg.serve.socket = dir.join("serve.sock").to_string_lossy().to_string();
 
-[base_model]
-repo = "{base}"
-
-[gen]
-n_per_class = 150
-
-[gen.supervisor]
-provider = "anthropic"
-model = "claude-sonnet-4-6"
-
-[train]
-epochs = 3
-learning_rate = 2e-4
-lora_rank = 8
-lora_alpha = 16
-batch_size = 4
-max_seq_len = 256
-
-[export]
-format = "gguf"
-quantization = "Q8_0"
-
-[serve]
-socket = "/tmp/smoltrain-{name}.sock"
-"#,
-        classes = classes
-            .iter()
-            .map(|c| format!("\"{}\"", c))
-            .collect::<Vec<_>>()
-            .join(", ")
-    );
-
-    std::fs::write(config_path(name), cfg)?;
-    println!("Created task '{}' at {}", name, dir.display());
-    println!("Next: smoltrain gen {} --n {} --supervisor claude", name, classes.len() * 150);
+    let text = toml::to_string_pretty(&cfg)?;
+    std::fs::write(config_path(name), text)?;
     Ok(())
 }

@@ -1,85 +1,102 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand};
-
-mod config;
-mod gen;
-mod train;
-mod eval;
-mod export;
-mod serve;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
-#[command(name = "smoltrain", version, about = "Train tiny task-specific classifier models")]
+#[command(name = "smoltrain", about = "Train tiny ONNX text classifiers")]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Command,
 }
 
 #[derive(Subcommand)]
-enum Commands {
-    /// Create a new smoltrain task
+enum Command {
+    /// Create a new classification task
     New {
+        /// Task name
         name: String,
-        #[arg(long)] goal: String,
-        #[arg(long, value_delimiter = ',')] classes: Vec<String>,
-        #[arg(long, default_value = "Qwen/Qwen3-0.6B")] base: String,
+        /// Comma-separated class labels
+        #[arg(long)]
+        classes: String,
+        /// What the classifier should do (goal description)
+        #[arg(long)]
+        goal: String,
     },
-    /// Generate training data via supervisor model
+    /// Generate training examples via supervisor LLM
     Gen {
-        task: String,
-        #[arg(long, default_value_t = 500)] n: usize,
-        #[arg(long, default_value = "claude")] supervisor: String,
+        /// Task name
+        name: String,
+        /// Examples per class to generate
+        #[arg(long, default_value = "50")]
+        count: usize,
     },
-    /// Fine-tune the base model
+    /// Fine-tune DistilBERT on the dataset
     Train {
-        task: String,
-        #[arg(long, default_value_t = 3)] epochs: usize,
+        /// Task name
+        name: String,
     },
-    /// Evaluate accuracy + confusion matrix
-    Eval { task: String },
-    /// Export model to GGUF or MLX
+    /// Evaluate the exported ONNX model on the dataset
+    Eval {
+        /// Task name
+        name: String,
+    },
+    /// Export fine-tuned model to ONNX INT8
     Export {
-        task: String,
-        #[arg(long, default_value = "gguf")] format: String,
+        /// Task name
+        name: String,
     },
-    /// Run hot classifier daemon
+    /// Run the classifier daemon on a Unix socket
     Serve {
-        task: String,
-        #[arg(long)] port: Option<u16>,
-        #[arg(long)] socket: Option<String>,
+        /// Task name
+        name: String,
     },
-    /// Single classify call (for testing)
+    /// Classify a single input and print the class
     Classify {
-        task: String,
+        /// Task name
+        name: String,
+        /// Text to classify
         input: String,
     },
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::New { name, goal, classes, base } => {
-            config::new_task(&name, &goal, &classes, &base)?;
+        Command::New { name, classes, goal } => {
+            let class_list: Vec<String> = classes.split(',').map(|s| s.trim().to_string()).collect();
+            smoltrain::config::new_task(&name, class_list, goal)?;
+            println!("Created task '{name}'");
         }
-        Commands::Gen { task, n, supervisor } => {
-            gen::run(&task, n, &supervisor).await?;
+        Command::Gen { name, count } => {
+            let cfg = smoltrain::config::load(&name)?;
+            smoltrain::gen::run(&cfg, count).await?;
         }
-        Commands::Train { task, epochs } => {
-            train::run(&task, epochs)?;
+        Command::Train { name } => {
+            let cfg = smoltrain::config::load(&name)?;
+            smoltrain::train::run(&cfg)?;
         }
-        Commands::Eval { task } => {
-            eval::run(&task)?;
+        Command::Eval { name } => {
+            let cfg = smoltrain::config::load(&name)?;
+            smoltrain::eval::run(&cfg)?;
         }
-        Commands::Export { task, format } => {
-            export::run(&task, &format)?;
+        Command::Export { name } => {
+            let cfg = smoltrain::config::load(&name)?;
+            smoltrain::export::run(&cfg)?;
         }
-        Commands::Serve { task, port, socket } => {
-            serve::run(&task, port, socket).await?;
+        Command::Serve { name } => {
+            let cfg = smoltrain::config::load(&name)?;
+            smoltrain::serve::run(&cfg)?;
         }
-        Commands::Classify { task, input } => {
-            let label = serve::classify_once(&task, &input)?;
+        Command::Classify { name, input } => {
+            let cfg = smoltrain::config::load(&name)?;
+            let mut classifier = smoltrain::classify::OnnxClassifier::load(&cfg)?;
+            let label = classifier.classify(&input)?;
             println!("{label}");
         }
     }

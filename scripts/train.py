@@ -1,143 +1,122 @@
 #!/usr/bin/env python3
-"""
-mlx-lm LoRA fine-tuning for smoltrain classifiers.
-Called by: smoltrain train <task>
-
-Usage:
-  python3 scripts/train.py \
-    --model Qwen/Qwen3-0.6B \
-    --dataset ~/.local/share/smoltrain/routing/train.jsonl \
-    --output ~/.local/share/smoltrain/routing/model \
-    --epochs 3 \
-    --classes code,edit,chat,research \
-    --goal "Classify an LLM request into one of these routing buckets"
-"""
+"""Fine-tune DistilBERT for sequence classification using HuggingFace Trainer."""
 
 import argparse
 import json
-import os
-import sys
-import tempfile
 from pathlib import Path
 
-
-def make_chat_example(goal: str, classes: list[str], input_text: str, label: str) -> dict:
-    """Convert a (input, label) pair into a chat fine-tuning example."""
-    class_list = "|".join(classes)
-    return {
-        "messages": [
-            {
-                "role": "system",
-                "content": f"Classify the following request into one of: {class_list}\nRespond with only the class name."
-            },
-            {
-                "role": "user",
-                "content": input_text
-            },
-            {
-                "role": "assistant",
-                "content": label
-            }
-        ]
-    }
+import numpy as np
 
 
-def load_dataset(path: Path, goal: str, classes: list[str]) -> list[dict]:
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--model", default="distilbert-base-uncased")
+    p.add_argument("--dataset", required=True)
+    p.add_argument("--output", required=True)
+    p.add_argument("--epochs", type=int, default=3)
+    p.add_argument("--classes", required=True, help="comma-separated class labels")
+    p.add_argument("--goal", default="")
+    p.add_argument("--lr", type=float, default=2e-5)
+    p.add_argument("--batch-size", type=int, default=16)
+    p.add_argument("--max-seq-len", type=int, default=128)
+    return p.parse_args()
+
+
+def load_jsonl(path):
     examples = []
     with open(path) as f:
         for line in f:
             line = line.strip()
-            if not line:
-                continue
-            ex = json.loads(line)
-            examples.append(make_chat_example(goal, classes, ex["input"], ex["label"]))
+            if line:
+                examples.append(json.loads(line))
     return examples
 
 
-def split_dataset(examples: list[dict], val_frac: float = 0.1):
-    import random
-    random.shuffle(examples)
-    n_val = max(1, int(len(examples) * val_frac))
-    return examples[n_val:], examples[:n_val]
-
-
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--dataset", required=True, type=Path)
-    parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--lora-rank", type=int, default=8)
-    parser.add_argument("--lora-alpha", type=int, default=16)
-    parser.add_argument("--batch-size", type=int, default=4)
-    parser.add_argument("--max-seq-len", type=int, default=256)
-    parser.add_argument("--classes", required=True)
-    parser.add_argument("--goal", required=True)
-    args = parser.parse_args()
+    args = parse_args()
+    classes = [c.strip() for c in args.classes.split(",")]
+    label2id = {c: i for i, c in enumerate(classes)}
+    id2label = {i: c for i, c in enumerate(classes)}
 
-    try:
-        import mlx_lm
-    except ImportError:
-        print("ERROR: mlx-lm not installed. Run: pip install mlx-lm", file=sys.stderr)
-        sys.exit(1)
+    from transformers import (
+        AutoModelForSequenceClassification,
+        AutoTokenizer,
+        Trainer,
+        TrainingArguments,
+    )
+    import evaluate
+    import torch
+    from torch.utils.data import Dataset
 
-    classes = args.classes.split(",")
-    print(f"Classes: {classes}")
-    print(f"Loading dataset from {args.dataset}...")
+    raw = load_jsonl(args.dataset)
+    # 90/10 split
+    n = len(raw)
+    split = max(1, int(n * 0.9))
+    train_raw, val_raw = raw[:split], raw[split:]
 
-    examples = load_dataset(args.dataset, args.goal, classes)
-    train_data, val_data = split_dataset(examples)
-    print(f"Train: {len(train_data)}, Val: {len(val_data)}")
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
-    # Write to temp JSONL files for mlx-lm
-    with tempfile.TemporaryDirectory() as tmpdir:
-        train_path = Path(tmpdir) / "train.jsonl"
-        val_path = Path(tmpdir) / "valid.jsonl"
-        test_path = Path(tmpdir) / "test.jsonl"
+    class TextDataset(Dataset):
+        def __init__(self, records):
+            self.records = records
 
-        for path, data in [(train_path, train_data), (val_path, val_data), (test_path, val_data)]:
-            with open(path, "w") as f:
-                for ex in data:
-                    f.write(json.dumps(ex) + "\n")
+        def __len__(self):
+            return len(self.records)
 
-        args.output.mkdir(parents=True, exist_ok=True)
+        def __getitem__(self, idx):
+            rec = self.records[idx]
+            enc = tokenizer(
+                rec["input"],
+                truncation=True,
+                max_length=args.max_seq_len,
+                padding="max_length",
+            )
+            enc["labels"] = label2id[rec["label"]]
+            return {k: torch.tensor(v) for k, v in enc.items()}
 
-        # Build mlx_lm.lora command
-        cmd = [
-            sys.executable, "-m", "mlx_lm.lora",
-            "--model", args.model,
-            "--train",
-            "--data", tmpdir,
-            "--adapter-path", str(args.output / "adapters"),
-            "--num-layers", str(args.lora_rank),
-            "--batch-size", str(args.batch_size),
-            "--num-iterations", str(len(train_data) * args.epochs // args.batch_size),
-            "--learning-rate", str(args.lr),
-            "--max-seq-length", str(args.max_seq_len),
-            "--steps-per-eval", "50",
-            "--save-every", "100",
-        ]
+    train_ds = TextDataset(train_raw)
+    val_ds = TextDataset(val_raw)
 
-        print("Running:", " ".join(cmd))
-        import subprocess
-        result = subprocess.run(cmd)
-        if result.returncode != 0:
-            sys.exit(result.returncode)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        args.model,
+        num_labels=len(classes),
+        id2label=id2label,
+        label2id=label2id,
+    )
 
-        # Fuse adapters into full model
-        fuse_cmd = [
-            sys.executable, "-m", "mlx_lm.fuse",
-            "--model", args.model,
-            "--adapter-path", str(args.output / "adapters"),
-            "--save-path", str(args.output),
-        ]
-        print("Fusing adapters:", " ".join(fuse_cmd))
-        result = subprocess.run(fuse_cmd)
-        if result.returncode != 0:
-            print("WARNING: adapter fuse failed — keeping unfused adapters")
+    accuracy_metric = evaluate.load("accuracy")
 
-    print(f"Done. Model at {args.output}")
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        preds = np.argmax(logits, axis=-1)
+        return accuracy_metric.compute(predictions=preds, references=labels)
+
+    training_args = TrainingArguments(
+        output_dir=args.output,
+        num_train_epochs=args.epochs,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
+        learning_rate=args.lr,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="accuracy",
+        logging_steps=10,
+        report_to="none",
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_ds,
+        eval_dataset=val_ds,
+        compute_metrics=compute_metrics,
+    )
+
+    trainer.train()
+    trainer.save_model(args.output)
+    tokenizer.save_pretrained(args.output)
+    print(f"model saved to {args.output}")
 
 
 if __name__ == "__main__":

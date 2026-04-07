@@ -1,58 +1,65 @@
-use anyhow::{Context, Result};
+use crate::config::TaskConfig;
+use anyhow::{bail, Context, Result};
 use std::process::Command;
-use crate::config;
+use tracing::info;
 
-pub fn run(task: &str, epochs: usize) -> Result<()> {
-    let cfg = config::load(task)?;
-    let dataset = config::dataset_path(task);
-    let model_dir = config::model_dir(task);
+pub fn run(cfg: &TaskConfig) -> Result<()> {
+    let name = &cfg.task.name;
+    let dataset_path = crate::config::dataset_path(name);
+    let model_dir = crate::config::model_dir(name);
 
-    if !dataset.exists() {
-        anyhow::bail!("No dataset found. Run: smoltrain gen {task}");
-    }
+    anyhow::ensure!(
+        dataset_path.exists(),
+        "dataset not found at {}. Run `smoltrain gen {}` first.",
+        dataset_path.display(),
+        name
+    );
 
     std::fs::create_dir_all(&model_dir)?;
 
-    let script = find_train_script()?;
+    let classes = cfg.task.classes.join(",");
+    let script = find_script("scripts/train.py")?;
 
-    println!("Fine-tuning '{}' for {} epochs...", cfg.base_model.repo, epochs);
-    println!("Dataset: {}", dataset.display());
-    println!("Output: {}", model_dir.display());
+    info!("launching training script: {}", script.display());
 
     let status = Command::new("python3")
         .arg(&script)
         .arg("--model").arg(&cfg.base_model.repo)
-        .arg("--dataset").arg(&dataset)
+        .arg("--dataset").arg(&dataset_path)
         .arg("--output").arg(&model_dir)
-        .arg("--epochs").arg(epochs.to_string())
-        .arg("--lr").arg(cfg.train.learning_rate.to_string())
-        .arg("--lora-rank").arg(cfg.train.lora_rank.to_string())
-        .arg("--lora-alpha").arg(cfg.train.lora_alpha.to_string())
+        .arg("--epochs").arg(cfg.train.epochs.to_string())
+        .arg("--classes").arg(&classes)
+        .arg("--goal").arg(&cfg.task.goal)
+        .arg("--lr").arg(cfg.train.lr.to_string())
         .arg("--batch-size").arg(cfg.train.batch_size.to_string())
         .arg("--max-seq-len").arg(cfg.train.max_seq_len.to_string())
-        .arg("--classes").arg(cfg.task.classes.join(","))
-        .arg("--goal").arg(&cfg.task.goal)
         .status()
-        .context("failed to run train.py — is Python 3 with mlx-lm installed?")?;
+        .context("failed to launch python3")?;
 
     if !status.success() {
-        anyhow::bail!("Training failed with exit code: {:?}", status.code());
+        bail!("training script failed with exit code {:?}", status.code());
     }
 
-    println!("Training complete. Model at {}", model_dir.display());
-    println!("Next: smoltrain eval {task}  OR  smoltrain export {task}");
+    println!("training complete -> {}", model_dir.display());
     Ok(())
 }
 
-fn find_train_script() -> Result<std::path::PathBuf> {
-    // Look for scripts/train.py relative to the binary
-    let exe = std::env::current_exe()?;
-    let candidates = [
-        exe.parent().and_then(|p| p.parent()).map(|p| p.join("scripts/train.py")),
-        Some(std::path::PathBuf::from("scripts/train.py")),
-    ];
-    for c in candidates.into_iter().flatten() {
-        if c.exists() { return Ok(c); }
+fn find_script(relative: &str) -> Result<std::path::PathBuf> {
+    let p = std::path::Path::new(relative);
+    if p.exists() {
+        return Ok(p.to_path_buf());
     }
-    anyhow::bail!("scripts/train.py not found")
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let candidate = dir.join(relative);
+            if candidate.exists() {
+                return Ok(candidate);
+            }
+            let candidate = dir.join("..").join("..").join(relative);
+            if candidate.exists() {
+                return Ok(candidate.canonicalize()?);
+            }
+        }
+    }
+    bail!("cannot find {relative}");
 }
