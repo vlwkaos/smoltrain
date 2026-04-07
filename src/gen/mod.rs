@@ -21,7 +21,7 @@ pub async fn run(cfg: &TaskConfig, count_per_class: usize) -> Result<()> {
             continue;
         }
         info!("generating {} examples for class '{}'", needed, class);
-        let new_examples = client.generate(class, needed, &cfg.task.goal, &cfg.task.classes).await?;
+        let new_examples = client.generate(class, needed, &cfg.task.goal, &cfg.task.classes, cfg.task.class_descriptions.as_ref()).await?;
         examples.extend(new_examples);
         save(&dataset_path, &examples)?;
         info!("saved {} total examples", examples.len());

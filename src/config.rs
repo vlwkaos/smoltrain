@@ -16,6 +16,8 @@ pub struct TaskMeta {
     pub name: String,
     pub goal: String,
     pub classes: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub class_descriptions: Option<std::collections::HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +53,7 @@ impl Default for TaskConfig {
                 name: String::new(),
                 goal: String::new(),
                 classes: vec![],
+                class_descriptions: None,
             },
             base_model: BaseModel {
                 repo: "distilbert-base-uncased".to_string(),

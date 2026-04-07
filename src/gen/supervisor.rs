@@ -199,19 +199,43 @@ impl SupervisorClient {
         count: usize,
         goal: &str,
         all_classes: &[String],
+        class_descriptions: Option<&std::collections::HashMap<String, String>>,
     ) -> Result<Vec<Example>> {
         let classes_str = all_classes.join(", ");
-        let prompt = format!(
-            "Generate {count} diverse, realistic example texts for the classification label \"{class}\".\n\
-            Task: {goal}\n\
-            All possible labels: {classes_str}\n\n\
-            Rules:\n\
-            - Each example on its own line, plain text only\n\
-            - No numbering, no quotes, no prefixes\n\
-            - Varied phrasing and length (short and long examples)\n\
-            - Each example clearly belongs to \"{class}\" not other labels\n\n\
-            Output exactly {count} lines:"
-        );
+        let prompt = if let Some(descs) = class_descriptions {
+            let class_description = descs.get(class).map(|s| s.as_str()).unwrap_or("");
+            let contrast_classes: String = all_classes
+                .iter()
+                .filter(|c| c.as_str() != class)
+                .filter_map(|c| descs.get(c).map(|d| format!("\"{}\" ({})", c, d)))
+                .collect::<Vec<_>>()
+                .join(" | ");
+            format!(
+                "Generate {count} diverse, realistic example texts for the classification label \"{class}\".\n\
+                Task: {goal}\n\
+                Class definition: {class_description}\n\
+                All labels: {classes_str}\n\n\
+                Contrastive rules:\n\
+                - Each example must CLEARLY belong to \"{class}\" and NOT to any other label\n\
+                - Especially avoid ambiguity with: {contrast_classes}\n\
+                - Focus on the BOUNDARY cases — examples that could be confused but are definitively \"{class}\"\n\
+                - Varied phrasing and length (short and long examples)\n\
+                - Each example on its own line, plain text only, no numbering, no quotes\n\n\
+                Output exactly {count} lines:"
+            )
+        } else {
+            format!(
+                "Generate {count} diverse, realistic example texts for the classification label \"{class}\".\n\
+                Task: {goal}\n\
+                All possible labels: {classes_str}\n\n\
+                Rules:\n\
+                - Each example on its own line, plain text only\n\
+                - No numbering, no quotes, no prefixes\n\
+                - Varied phrasing and length (short and long examples)\n\
+                - Each example clearly belongs to \"{class}\" not other labels\n\n\
+                Output exactly {count} lines:"
+            )
+        };
 
         let text = if self.provider.is_anthropic_format() {
             self.call_anthropic(&prompt).await?
