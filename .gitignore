@@ -1,0 +1,6 @@
+target/
+*.gguf
+*.safetensors
+__pycache__/
+*.pyc
+.DS_Store

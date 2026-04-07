@@ -1,0 +1,50 @@
+[package]
+name = "smoltrain"
+version = "0.1.0"
+edition = "2021"
+description = "Train tiny task-specific classifier models on the fly"
+license = "MIT"
+
+[[bin]]
+name = "smoltrain"
+path = "src/main.rs"
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP (supervisor API calls)
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# llama.cpp bindings (same as ir — for serve/classifier)
+llama-cpp-2 = "0.1"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Unix socket / IPC for daemon
+# (std UnixListener is sufficient, no extra dep)
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Dirs
+dirs = "5"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[build-dependencies]
+# For llama.cpp Metal build (same as ir)
