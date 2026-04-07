@@ -11,7 +11,7 @@ pub async fn run(cfg: &TaskConfig, count_per_class: usize) -> Result<()> {
     let dataset_path = crate::config::dataset_path(&cfg.task.name);
     let mut examples = load(&dataset_path).unwrap_or_default();
 
-    let client = SupervisorClient::new(cfg)?;
+    let client = SupervisorClient::new(&cfg.gen.supervisor, &cfg.gen.supervisor_model)?;
 
     for class in &cfg.task.classes {
         let existing = examples.iter().filter(|e| &e.label == class).count();

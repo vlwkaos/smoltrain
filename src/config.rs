@@ -25,9 +25,10 @@ pub struct BaseModel {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenConfig {
-    pub supervisor_url: String,
+    /// Provider name: "anthropic" | "claude-oauth" | "groq" | "openai" | "ollama" | "omlx" | "local:<url>"
+    pub supervisor: String,
     pub supervisor_model: String,
-    pub api_key_env: String,
+    pub n_per_class: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,9 +56,9 @@ impl Default for TaskConfig {
                 repo: "distilbert-base-uncased".to_string(),
             },
             gen: GenConfig {
-                supervisor_url: "https://api.anthropic.com/v1/messages".to_string(),
-                supervisor_model: "claude-3-haiku-20240307".to_string(),
-                api_key_env: "ANTHROPIC_API_KEY".to_string(),
+                supervisor: "claude-oauth".to_string(),
+                supervisor_model: "claude-haiku-4-5".to_string(),
+                n_per_class: 150,
             },
             train: TrainConfig {
                 epochs: 3,
