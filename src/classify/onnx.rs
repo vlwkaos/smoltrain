@@ -51,28 +51,23 @@ impl OnnxClassifier {
 
         let seq_len = encoding.get_ids().len();
 
+        // DistilBERT only uses input_ids + attention_mask (no token_type_ids)
         let ids: Vec<i64> = encoding.get_ids().iter().map(|&x| x as i64).collect();
         let mask: Vec<i64> = encoding.get_attention_mask().iter().map(|&x| x as i64).collect();
-        let type_ids: Vec<i64> = encoding.get_type_ids().iter().map(|&x| x as i64).collect();
 
         let input_ids = Array2::from_shape_vec((1, seq_len), ids)
             .context("failed to build input_ids array")?;
         let attention_mask = Array2::from_shape_vec((1, seq_len), mask)
             .context("failed to build attention_mask array")?;
-        let token_type_ids = Array2::from_shape_vec((1, seq_len), type_ids)
-            .context("failed to build token_type_ids array")?;
 
         let t_input_ids = Tensor::from_array(input_ids)
             .context("failed to create input_ids tensor")?;
         let t_attention_mask = Tensor::from_array(attention_mask)
             .context("failed to create attention_mask tensor")?;
-        let t_token_type_ids = Tensor::from_array(token_type_ids)
-            .context("failed to create token_type_ids tensor")?;
 
         let outputs = self.session.run(ort::inputs![
             "input_ids" => t_input_ids,
             "attention_mask" => t_attention_mask,
-            "token_type_ids" => t_token_type_ids,
         ])?;
 
         let (_shape, logits) = outputs["logits"]

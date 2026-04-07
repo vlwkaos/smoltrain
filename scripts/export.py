@@ -25,28 +25,30 @@ def main():
 
     print(f"loading model from {model_dir}")
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
-    model = AutoModelForSequenceClassification.from_pretrained(str(model_dir))
+    # attn_implementation="eager" avoids head_mask tensor size mismatch during ONNX trace
+    model = AutoModelForSequenceClassification.from_pretrained(
+        str(model_dir), attn_implementation="eager"
+    )
     model.eval()
 
     seq_len = args.seq_len
     dummy_input_ids = torch.zeros(1, seq_len, dtype=torch.long)
     dummy_mask = torch.ones(1, seq_len, dtype=torch.long)
-    dummy_token_type_ids = torch.zeros(1, seq_len, dtype=torch.long)
 
     onnx_fp32 = output_dir / "model_fp32.onnx"
     onnx_int8 = output_dir / "model_int8.onnx"
 
     print("exporting to ONNX FP32...")
+    # DistilBERT does not use token_type_ids — only input_ids + attention_mask
     torch.onnx.export(
         model,
-        (dummy_input_ids, dummy_mask, dummy_token_type_ids),
+        (dummy_input_ids, dummy_mask),
         str(onnx_fp32),
-        input_names=["input_ids", "attention_mask", "token_type_ids"],
+        input_names=["input_ids", "attention_mask"],
         output_names=["logits"],
         dynamic_axes={
             "input_ids": {0: "batch", 1: "seq"},
             "attention_mask": {0: "batch", 1: "seq"},
-            "token_type_ids": {0: "batch", 1: "seq"},
             "logits": {0: "batch"},
         },
         opset_version=14,

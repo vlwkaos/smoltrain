@@ -27,7 +27,7 @@ enum Command {
         /// Task name
         name: String,
         /// Examples per class to generate
-        #[arg(long, default_value = "50")]
+        #[arg(long, default_value = "150")]
         count: usize,
     },
     /// Fine-tune DistilBERT on the dataset
