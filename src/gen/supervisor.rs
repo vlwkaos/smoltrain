@@ -46,9 +46,16 @@ impl Provider {
                 match read_claude_oauth_token() {
                     Ok(token) => Ok(Provider::ClaudeOAuth { access_token: token }),
                     Err(e) => {
-                        eprintln!("claude-oauth keychain read failed ({e}), falling back to ANTHROPIC_API_KEY");
+                        eprintln!("claude-oauth keychain read failed ({e}), checking ANTHROPIC_TOKEN...");
+                        // Hermes stores its OAuth token as ANTHROPIC_TOKEN
+                        if let Ok(token) = std::env::var("ANTHROPIC_TOKEN") {
+                            if !token.is_empty() {
+                                return Ok(Provider::ClaudeOAuth { access_token: token });
+                            }
+                        }
+                        eprintln!("ANTHROPIC_TOKEN not set, falling back to ANTHROPIC_API_KEY");
                         let key = std::env::var("ANTHROPIC_API_KEY")
-                            .context("ANTHROPIC_API_KEY not set and claude-oauth unavailable")?;
+                            .context("No auth available: set ANTHROPIC_TOKEN or ANTHROPIC_API_KEY")?;
                         Ok(Provider::Anthropic { api_key: key })
                     }
                 }
