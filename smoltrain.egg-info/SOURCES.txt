@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+smoltrain/__init__.py
+smoltrain/classify.py
+smoltrain/cli.py
+smoltrain/config.py
+smoltrain/export.py
+smoltrain/gen.py
+smoltrain/serve.py
+smoltrain/train.py
+smoltrain.egg-info/PKG-INFO
+smoltrain.egg-info/SOURCES.txt
+smoltrain.egg-info/dependency_links.txt
+smoltrain.egg-info/entry_points.txt
+smoltrain.egg-info/requires.txt
+smoltrain.egg-info/top_level.txt
