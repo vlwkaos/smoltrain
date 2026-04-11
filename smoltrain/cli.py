@@ -65,6 +65,16 @@ def classify(name, input):
     click.echo(c.classify(input))
 
 
+@main.command("pipeline", context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.argument("pipeline_args", nargs=-1, type=click.UNPROCESSED)
+def pipeline_cmd(pipeline_args):
+    """Run full CharCNN pipeline: merge -> train -> eval -> export -> latency."""
+    import sys
+    from smoltrain import pipeline
+    sys.argv = [sys.argv[0]] + list(pipeline_args)
+    pipeline.main()
+
+
 @main.command("run")
 @click.argument("name")
 @click.option("--count", default=None, type=int, help="Examples per class (overrides config)")
