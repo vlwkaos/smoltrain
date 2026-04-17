@@ -1,0 +1,19 @@
+classes:
+  simple:
+    description: "Single-turn request requiring a direct response. No reasoning or planning needed. Examples: greetings, trivial factual questions, one-word commands, clearly bounded single-step tasks."
+  reasoning:
+    description: "Single-turn request requiring thinking, analysis, or non-trivial inference. Examples: code review, debugging help, explain a concept, write something complex, answer a hard question."
+  agentic:
+    description: "Request requiring multiple steps, tool use, planning, or orchestration across turns. Examples: build a feature end-to-end, research and summarize, fix a bug by finding and editing files, run tests and iterate."
+
+languages:
+  - en
+  - ko
+
+config:
+  samples_per_class: 500
+  naturalizer_ratio: 0.20
+  hard_negative_ratio: 0.10
+  latency_target_ms: 50
+  f1_floor: 0.85
+  agentic_recall_floor: 0.87

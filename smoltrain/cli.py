@@ -69,10 +69,8 @@ def classify(name, input):
 @click.argument("pipeline_args", nargs=-1, type=click.UNPROCESSED)
 def pipeline_cmd(pipeline_args):
     """Run full CharCNN pipeline: merge -> train -> eval -> export -> latency."""
-    import sys
-    from smoltrain import pipeline
-    sys.argv = [sys.argv[0]] + list(pipeline_args)
-    pipeline.main()
+    from smoltrain.pipeline import main as pipeline_main
+    pipeline_main(list(pipeline_args))
 
 
 @main.command("run")

@@ -1,6 +1,7 @@
 """Generate training data using a supervisor LLM."""
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 from collections import Counter
@@ -221,11 +222,8 @@ def run(cfg):
                 continue
 
             lines = [l.strip() for l in text.splitlines() if l.strip()]
-            # Remove leading numbering/bullets if model added them
             cleaned = []
             for l in lines:
-                # strip "1. " or "- " prefixes
-                import re
                 l = re.sub(r"^\d+\.\s+", "", l)
                 l = re.sub(r"^[-*]\s+", "", l)
                 if l:

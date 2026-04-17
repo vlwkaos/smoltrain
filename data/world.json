@@ -1,0 +1,552 @@
+{
+  "classes": {
+    "simple": {
+      "templates": {
+        "en": {
+          "imperative": [
+            "what time is it",
+            "say hello",
+            "repeat that",
+            "what is 2 + 2",
+            "tell me a joke",
+            "hi",
+            "hello",
+            "thanks",
+            "ok got it",
+            "what does API stand for"
+          ],
+          "casual": [
+            "hey what's up",
+            "can you say hi",
+            "what's 10 times 5",
+            "do you know what time it is",
+            "hey quick question, what does RAM stand for",
+            "btw what's the capital of France",
+            "yo what's the syntax for a for loop in python",
+            "what does HTTP stand for"
+          ],
+          "frustrated": [
+            "ugh just tell me what stdin means",
+            "come on just answer: what is a variable",
+            "just give me the definition of recursion already",
+            "i just need to know what null means"
+          ],
+          "uncertain": [
+            "is python case sensitive?",
+            "does javascript have a main function?",
+            "can you remind me what a boolean is",
+            "i think i know but what is an integer"
+          ],
+          "indirect": [
+            "i always forget what EOF stands for",
+            "i keep mixing up == and ===",
+            "not sure what the difference is between a list and an array"
+          ],
+          "implicit": [
+            "EOF meaning",
+            "python for loop syntax",
+            "what is null",
+            "boolean definition",
+            "integer vs float"
+          ],
+          "fragment": [
+            "hello",
+            "hi",
+            "thx",
+            "ok",
+            "lol",
+            "wat",
+            "hm",
+            "sure",
+            "yep",
+            "nope"
+          ]
+        },
+        "ko": {
+          "imperative": [
+            "안녕",
+            "지금 몇 시야",
+            "2 더하기 2는 얼마야",
+            "API가 뭐야",
+            "파이썬에서 for 루프 문법이 어떻게 돼",
+            "RAM이 뭔 약자야",
+            "null이 뭐야",
+            "boolean이 뭔지 알려줘",
+            "재귀가 뭔지 간단히 설명해줘",
+            "HTTP 뭐의 약자야"
+          ],
+          "casual": [
+            "야 잠깐, null이 뭐임",
+            "ㅋㅋ 파이썬 for문 어떻게 쓰더라",
+            "아 맞다 EOF 뭐였지",
+            "boolean이 뭔지 알아?",
+            "== 랑 === 차이가 뭐더라",
+            "리스트랑 배열 차이가 뭔지 알려줘",
+            "파이썬 대소문자 구분해?"
+          ],
+          "frustrated": [
+            "진짜 그냥 stdin이 뭔지만 알려줘",
+            "아 그냥 변수가 뭔지만 말해줘",
+            "아 진짜 null 뜻만 알려달라고",
+            "제발 그냥 재귀 정의만"
+          ],
+          "uncertain": [
+            "파이썬이 대소문자 구분하던가요?",
+            "자바스크립트에 main 함수가 있나요?",
+            "boolean이 뭔지 맞게 알고 있는지 모르겠어서",
+            "정수랑 실수 차이가 맞나요?"
+          ],
+          "indirect": [
+            "EOF 약자가 항상 헷갈려요",
+            "== 랑 === 계속 헷갈림",
+            "리스트랑 배열 차이를 잘 모르겠어요"
+          ],
+          "implicit": [
+            "EOF 뜻",
+            "파이썬 for문",
+            "null이란",
+            "boolean 정의",
+            "정수 vs 실수"
+          ],
+          "fragment": [
+            "안녕",
+            "응",
+            "ㅇㅋ",
+            "ㄳ",
+            "ㅋㅋ",
+            "넵",
+            "그렇군",
+            "알겠어",
+            "맞아",
+            "헐"
+          ]
+        },
+        "mixed": {
+          "imperative": [
+            "null이 뭔지 알려줘 in english",
+            "boolean definition 알려줘",
+            "for loop syntax in python 알려줘",
+            "HTTP acronym 알려줘",
+            "EOF 뜻 tell me"
+          ]
+        }
+      },
+      "slot_lists": {
+        "concept": ["null", "boolean", "integer", "float", "string", "array", "list", "variable", "function", "loop", "recursion", "stdin", "stdout", "EOF", "API", "HTTP", "RAM", "CPU", "pointer", "scope", "closure", "class", "object", "method", "interface", "module", "package", "import", "export", "async"],
+        "action_verb": ["define", "explain", "tell me", "say", "show", "remind me", "clarify", "describe"],
+        "filler": ["quick question", "hey", "btw", "yo", "just wondering", "by the way", "one sec"]
+      },
+      "situation_corpus": {
+        "en": [
+          "A developer is onboarding and has a quick definitional question",
+          "Someone is mid-task and just needs a fast clarification",
+          "A student learning to code needs a basic concept explained",
+          "A developer quickly checks a fact before continuing work",
+          "Someone is half-reading documentation and needs a term clarified"
+        ],
+        "ko": [
+          "개발 입문자가 기초 개념을 빠르게 확인하려는 상황",
+          "코딩 중 용어가 헷갈려서 잠깐 확인하는 상황",
+          "온보딩 중에 가벼운 질문을 하는 상황",
+          "문서 읽다가 모르는 단어 나온 상황",
+          "팀원한테 물어보기 애매해서 AI한테 물어보는 상황"
+        ]
+      },
+      "conversational_wrappers": {
+        "en": ["oh wait, [INTENT]", "actually, [INTENT]", "quick one — [INTENT]", "random question but [INTENT]", "also [INTENT]"],
+        "ko": ["아 참, [INTENT]", "그나저나 [INTENT]", "잠깐, [INTENT]", "근데 [INTENT]", "그리고 [INTENT]"]
+      },
+      "cross_class_discriminators": {
+        "vs_reasoning": {
+          "key_signals": ["what is", "define", "what does X stand for", "how do you spell", "yes/no questions", "single factual lookup"],
+          "confusion_patterns": ["'what is X' can look like reasoning if X is complex — but simple class means the answer is a single sentence lookup, no analysis"]
+        },
+        "vs_agentic": {
+          "key_signals": ["no file references", "no 'do this', no multi-step implied", "purely informational", "no output artifact expected"],
+          "confusion_patterns": ["'show me X' could be agentic if X requires building something, but simple if X is just a definition"]
+        }
+      },
+      "length_profile": { "short_pct": 0.6, "medium_pct": 0.35, "long_pct": 0.05 }
+    },
+    "reasoning": {
+      "templates": {
+        "en": {
+          "imperative": [
+            "explain why this function is slow",
+            "review this code and point out issues",
+            "explain how async/await works in javascript",
+            "compare REST and GraphQL",
+            "analyze this SQL query for performance issues",
+            "explain the tradeoffs between a list and a linked list",
+            "what's wrong with this regex",
+            "explain how the rust borrow checker works",
+            "review my error handling approach",
+            "explain when to use a hashmap vs a binary search tree"
+          ],
+          "casual": [
+            "can you take a look at this and tell me what's off",
+            "do you see anything weird in this function",
+            "hey walk me through why this would fail",
+            "what do you think about this approach",
+            "is this the right way to do it or am I overcomplicating it",
+            "can you break down what this code is actually doing",
+            "why does this pattern cause memory leaks",
+            "how would you approach this differently"
+          ],
+          "frustrated": [
+            "I don't understand why this is failing, can you just explain it",
+            "this makes no sense, explain it to me like I'm five",
+            "ugh why does async/await still confuse me, help",
+            "can you please just explain what's wrong with this logic"
+          ],
+          "uncertain": [
+            "I think my approach is okay but I'm not sure — can you review it",
+            "not sure if this is the right pattern here, thoughts?",
+            "does this make sense or am I missing something obvious",
+            "is this considered good practice or should I rethink it"
+          ],
+          "indirect": [
+            "this function keeps throwing and I have no idea why",
+            "my team keeps telling me my error handling is wrong but I don't see it",
+            "users are reporting slow responses but I can't find the bottleneck",
+            "the code works but somehow it feels wrong"
+          ],
+          "implicit": [
+            "tradeoffs between REST and GraphQL",
+            "why async/await is confusing",
+            "borrow checker explained",
+            "N+1 query problem",
+            "closure vs lambda"
+          ],
+          "fragment": [
+            "review this",
+            "what's wrong here",
+            "explain this",
+            "why is this slow",
+            "any issues"
+          ]
+        },
+        "ko": {
+          "imperative": [
+            "이 코드 리뷰해줘",
+            "이 함수가 왜 느린지 설명해줘",
+            "async/await가 어떻게 동작하는지 설명해줘",
+            "REST랑 GraphQL 비교해줘",
+            "이 SQL 쿼리 성능 문제 분석해줘",
+            "이 regex 어디가 잘못됐는지 봐줘",
+            "rust borrow checker 동작 방식 설명해줘",
+            "에러 핸들링 방식 리뷰해줘",
+            "hashmap이랑 BST 언제 쓰는지 비교해줘",
+            "이 로직 트레이드오프 분석해줘"
+          ],
+          "casual": [
+            "이거 보고 뭔가 이상한 점 있으면 말해줘",
+            "왜 이게 실패하는지 설명해줄 수 있어?",
+            "이 접근 방식 어떻게 생각해?",
+            "이게 맞는 방법인지 너무 복잡하게 하는 건지 모르겠어",
+            "이 코드가 뭘 하는지 설명해줘",
+            "이 패턴이 왜 메모리 누수를 일으키는지 알아?",
+            "어떻게 다르게 접근하겠어?"
+          ],
+          "frustrated": [
+            "왜 이게 실패하는지 모르겠어, 그냥 설명해줘",
+            "진짜 이해가 안 가, 쉽게 설명해줘",
+            "async/await 아직도 헷갈려, 도와줘",
+            "이 로직 뭐가 문제인지 제발 설명해줘"
+          ],
+          "uncertain": [
+            "내 접근 방식이 맞는지 모르겠어서 — 리뷰해줄 수 있어?",
+            "이 패턴이 맞는지 의견 줄 수 있어?",
+            "이게 말이 되는 건지 아니면 뭔가 놓친 건지",
+            "좋은 습관인지 아니면 다시 생각해야 하는지"
+          ],
+          "indirect": [
+            "이 함수 계속 에러나는데 이유를 모르겠어",
+            "팀원이 에러 핸들링이 잘못됐다는데 모르겠어",
+            "응답이 느리다는데 병목을 못 찾겠어",
+            "코드는 돌아가는데 뭔가 잘못된 느낌"
+          ],
+          "implicit": [
+            "REST GraphQL 트레이드오프",
+            "async/await 헷갈리는 이유",
+            "borrow checker 설명",
+            "N+1 쿼리 문제",
+            "클로저 vs 람다"
+          ],
+          "fragment": [
+            "리뷰해줘",
+            "여기 뭐가 문제야",
+            "설명해줘",
+            "왜 느려",
+            "문제 있어?"
+          ]
+        },
+        "mixed": {
+          "imperative": [
+            "이 code review해줘",
+            "async/await 동작 방식 explain해줘",
+            "REST랑 GraphQL compare해줘",
+            "이 function 왜 slow한지 설명해줘",
+            "error handling 방식 리뷰해줘"
+          ]
+        }
+      },
+      "slot_lists": {
+        "artifact": ["function", "code", "query", "regex", "approach", "pattern", "logic", "algorithm", "schema", "architecture", "design", "implementation"],
+        "issue_type": ["slow", "wrong", "confusing", "inefficient", "insecure", "redundant", "complex", "brittle", "buggy"],
+        "analysis_verb": ["review", "explain", "analyze", "compare", "evaluate", "assess", "critique", "break down"],
+        "concept": ["async/await", "borrow checker", "closures", "promises", "generics", "polymorphism", "dependency injection", "event loop", "garbage collection", "memoization"]
+      },
+      "situation_corpus": {
+        "en": [
+          "A developer is stuck understanding why their code behaves unexpectedly and needs a clear explanation",
+          "A senior dev is doing a design review before committing to an approach",
+          "Someone is preparing for a code review and wants a second opinion",
+          "A developer is learning a new language feature and needs it explained with context",
+          "A team lead is trying to understand tradeoffs before making an architectural decision"
+        ],
+        "ko": [
+          "코드가 왜 이렇게 동작하는지 이해가 안 돼서 설명이 필요한 상황",
+          "접근 방식 확정 전에 설계 검토하는 상황",
+          "코드 리뷰 전에 미리 점검하는 상황",
+          "새로운 언어 기능 배우면서 맥락과 함께 이해하려는 상황",
+          "아키텍처 결정 전 트레이드오프 분석하는 상황"
+        ]
+      },
+      "conversational_wrappers": {
+        "en": ["I've been looking at this for a while and [INTENT]", "before I commit to this approach, [INTENT]", "my team flagged this — [INTENT]", "I think I understand but [INTENT]"],
+        "ko": ["한참 보고 있는데 [INTENT]", "이 방식으로 가기 전에 [INTENT]", "팀에서 지적을 받았는데 [INTENT]", "이해한 것 같은데 [INTENT]"]
+      },
+      "cross_class_discriminators": {
+        "vs_simple": {
+          "key_signals": ["review", "explain why", "analyze", "compare", "tradeoff", "how does X work", "what's wrong with", "should I"],
+          "confusion_patterns": ["'explain X' overlaps with simple — key: reasoning requires analysis or evaluation, not just a lookup"]
+        },
+        "vs_agentic": {
+          "key_signals": ["no file editing implied", "no 'do it', no 'fix it'", "analysis only — produce insight not artifacts", "single response expected"],
+          "confusion_patterns": ["'fix this bug' = agentic (do it), 'explain why this is a bug' = reasoning (analyze it)"]
+        }
+      },
+      "length_profile": { "short_pct": 0.15, "medium_pct": 0.55, "long_pct": 0.30 }
+    },
+    "agentic": {
+      "templates": {
+        "en": {
+          "imperative": [
+            "fix the bug in the auth module",
+            "add error handling to all API calls",
+            "refactor this function to be more readable",
+            "write unit tests for the user service",
+            "migrate this codebase from callbacks to async/await",
+            "find and fix all the N+1 queries in this project",
+            "set up a CI pipeline for this repo",
+            "implement pagination for the users endpoint",
+            "rename all instances of userId to user_id throughout the project",
+            "add input validation to all form handlers"
+          ],
+          "casual": [
+            "can you fix that auth bug we talked about",
+            "mind adding some error handling in there",
+            "could you clean this up and make it more readable",
+            "go ahead and write some tests for this",
+            "can you take a look and fix whatever's causing the slowdown",
+            "just refactor it, it's getting too messy",
+            "would you mind setting up the CI for me",
+            "go and add pagination to that endpoint"
+          ],
+          "frustrated": [
+            "just fix the damn auth bug already",
+            "can you please just add error handling, this keeps crashing",
+            "this code is a mess, just clean it up",
+            "the tests are broken, just fix them"
+          ],
+          "uncertain": [
+            "I think there's a bug somewhere in auth, can you find and fix it",
+            "not sure where the leak is but can you track it down and fix it",
+            "could you maybe refactor this? it's getting hard to follow",
+            "would it be possible to add tests for this module"
+          ],
+          "indirect": [
+            "users keep getting logged out randomly",
+            "this endpoint is throwing 500s in production",
+            "the build keeps failing on the CI server",
+            "memory usage spikes every hour and I can't figure out why"
+          ],
+          "implicit": [
+            "auth bug fix",
+            "add tests",
+            "refactor user service",
+            "set up CI",
+            "migrate to async"
+          ],
+          "fragment": [
+            "fix it",
+            "add tests",
+            "refactor",
+            "clean this up",
+            "make it work"
+          ]
+        },
+        "ko": {
+          "imperative": [
+            "auth 모듈 버그 고쳐줘",
+            "API 호출에 에러 핸들링 추가해줘",
+            "이 함수 더 읽기 좋게 리팩터링해줘",
+            "user 서비스 유닛 테스트 작성해줘",
+            "콜백을 async/await로 마이그레이션해줘",
+            "프로젝트 내 N+1 쿼리 전부 찾아서 고쳐줘",
+            "이 레포에 CI 파이프라인 설정해줘",
+            "users 엔드포인트에 페이지네이션 구현해줘",
+            "userId를 user_id로 전체 프로젝트에서 바꿔줘",
+            "폼 핸들러에 입력 유효성 검사 추가해줘"
+          ],
+          "casual": [
+            "그 auth 버그 고쳐줄 수 있어?",
+            "에러 핸들링 좀 추가해줘",
+            "이거 좀 정리해서 읽기 쉽게 만들어줘",
+            "테스트 좀 작성해줘",
+            "느려지는 원인 찾아서 고쳐줄 수 있어?",
+            "그냥 리팩터링해줘, 너무 지저분해",
+            "CI 설정 해줄 수 있어?",
+            "그 엔드포인트에 페이지네이션 추가해줘"
+          ],
+          "frustrated": [
+            "그냥 auth 버그 좀 고쳐줘",
+            "제발 에러 핸들링 좀 추가해줘, 계속 크래시나",
+            "코드가 엉망이야, 그냥 정리해줘",
+            "테스트 다 깨졌어, 그냥 고쳐줘"
+          ],
+          "uncertain": [
+            "auth 어딘가에 버그가 있는 것 같아, 찾아서 고쳐줄 수 있어?",
+            "어디서 메모리가 새는지 모르겠는데 찾아서 고쳐줄 수 있어?",
+            "리팩터링해줄 수 있어? 따라가기 힘들어지고 있어",
+            "이 모듈에 테스트 추가해줄 수 있을까?"
+          ],
+          "indirect": [
+            "사용자들이 랜덤하게 로그아웃된대",
+            "이 엔드포인트가 프로덕션에서 500 뜬다",
+            "CI에서 빌드가 계속 실패해",
+            "매 시간 메모리 사용량이 급증하는데 이유를 모르겠어"
+          ],
+          "implicit": [
+            "auth 버그 수정",
+            "테스트 추가",
+            "user 서비스 리팩터링",
+            "CI 설정",
+            "async로 마이그레이션"
+          ],
+          "fragment": [
+            "고쳐줘",
+            "테스트 추가",
+            "리팩터링",
+            "정리해줘",
+            "동작하게 해줘"
+          ]
+        },
+        "mixed": {
+          "imperative": [
+            "auth bug 고쳐줘",
+            "error handling 추가해줘 to all API calls",
+            "이 function refactor해줘",
+            "unit tests 작성해줘 for user service",
+            "CI pipeline 설정해줘"
+          ]
+        }
+      },
+      "slot_lists": {
+        "action_verb": ["fix", "add", "implement", "refactor", "migrate", "set up", "configure", "write", "create", "update", "rename", "remove", "optimize", "integrate", "deploy"],
+        "artifact": ["bug", "tests", "error handling", "pagination", "CI pipeline", "authentication", "validation", "logging", "cache", "migration", "endpoint", "middleware", "hook", "config"],
+        "location": ["auth module", "user service", "API layer", "database layer", "frontend", "backend", "CI server", "all endpoints", "the entire codebase", "this file", "this function"],
+        "scope_modifier": ["throughout the project", "in all files", "end to end", "across the board", "everywhere", "in production", "before the deadline"]
+      },
+      "situation_corpus": {
+        "en": [
+          "A developer has identified a bug in production and needs it fixed now",
+          "A team lead is delegating a well-scoped ticket to an AI agent",
+          "A developer is starting a new feature and wants the scaffolding set up",
+          "An on-call engineer needs automated help to investigate and fix an incident",
+          "A developer is doing cleanup work before a big release"
+        ],
+        "ko": [
+          "프로덕션 버그가 발생해서 지금 바로 고쳐야 하는 상황",
+          "팀 리드가 잘 정의된 태스크를 AI에게 위임하는 상황",
+          "새 기능 시작 전에 스캐폴딩을 세팅하는 상황",
+          "온콜 엔지니어가 인시던트를 자동으로 조사하고 수정해야 하는 상황",
+          "큰 릴리즈 전에 정리 작업을 하는 상황"
+        ]
+      },
+      "conversational_wrappers": {
+        "en": ["while you're at it, [INTENT]", "before the release, [INTENT]", "can you take this on — [INTENT]", "this is blocking us — [INTENT]", "next up: [INTENT]"],
+        "ko": ["하는 김에 [INTENT]", "릴리즈 전에 [INTENT]", "이것도 맡아줄 수 있어 — [INTENT]", "이게 블로커야 — [INTENT]", "다음으로 [INTENT]"]
+      },
+      "cross_class_discriminators": {
+        "vs_simple": {
+          "key_signals": ["fix", "implement", "add", "create", "set up", "write tests", "migrate", "deploy", "multi-step implied", "output artifact expected"],
+          "confusion_patterns": ["'add X' could seem simple but agentic means actually doing it, not explaining it"]
+        },
+        "vs_reasoning": {
+          "key_signals": ["imperative action verb", "do it — don't just explain", "file changes expected", "iterate until done", "use tools"],
+          "confusion_patterns": ["'explain how to fix X' = reasoning, 'fix X' = agentic — the key is whether execution is required"]
+        }
+      },
+      "length_profile": { "short_pct": 0.20, "medium_pct": 0.50, "long_pct": 0.30 }
+    }
+  },
+  "compound_bridges": {
+    "en": [
+      "[INTENT_A] and also [INTENT_B]",
+      "[INTENT_A], then [INTENT_B]",
+      "while you're doing [INTENT_A], can you also [INTENT_B]",
+      "first [INTENT_A], then let's [INTENT_B]",
+      "[INTENT_A] — oh and [INTENT_B] while you're at it",
+      "can you [INTENT_A] and when you're done [INTENT_B]",
+      "before [INTENT_A], quickly [INTENT_B]",
+      "[INTENT_A] plus [INTENT_B]"
+    ],
+    "ko": [
+      "[INTENT_A] 하고 [INTENT_B]도 해줘",
+      "[INTENT_A] 한 다음에 [INTENT_B] 해줘",
+      "[INTENT_A] 하는 김에 [INTENT_B]도 해줄 수 있어?",
+      "먼저 [INTENT_A] 하고 그 다음에 [INTENT_B] 하자",
+      "[INTENT_A] — 아 그리고 [INTENT_B]도",
+      "[INTENT_A] 끝나면 [INTENT_B] 해줄 수 있어?",
+      "[INTENT_A] 전에 빠르게 [INTENT_B]",
+      "[INTENT_A]랑 [INTENT_B] 같이 해줘"
+    ]
+  },
+  "noise_patterns": {
+    "typo_rules": [
+      "swap adjacent characters with 3% probability",
+      "double a character with 2% probability",
+      "drop a character with 2% probability",
+      "common keyboard adjacency swaps: e→r, i→o, s→a, n→m",
+      "missing space between words with 1% probability"
+    ],
+    "abbreviations": {
+      "variable": ["var", "v"],
+      "function": ["fn", "func", "f"],
+      "component": ["comp", "cmp"],
+      "repository": ["repo"],
+      "configuration": ["config", "cfg", "conf"],
+      "authentication": ["auth"],
+      "application": ["app"],
+      "database": ["db"],
+      "environment": ["env"],
+      "dependency": ["dep", "deps"],
+      "documentation": ["docs", "doc"],
+      "implementation": ["impl"],
+      "interface": ["iface"],
+      "parameter": ["param", "params"],
+      "request": ["req"],
+      "response": ["res", "resp"],
+      "message": ["msg"],
+      "error": ["err"],
+      "index": ["idx", "i"],
+      "object": ["obj"]
+    },
+    "filler_words": {
+      "en": ["um", "uh", "so", "basically", "like", "just", "actually", "you know", "i mean", "kind of", "sort of", "right", "okay so"],
+      "ko": ["음", "그", "뭐", "이제", "그냥", "좀", "사실", "근데", "아", "뭔가", "그니까", "어"]
+    }
+  }
+}

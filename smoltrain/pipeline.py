@@ -5,8 +5,8 @@ Usage:
     python -m smoltrain.pipeline --data data/dataset.jsonl,data/naturalized.jsonl --epochs 15
 """
 import argparse
-import json
 import logging
+import os
 import random
 import sys
 import time
@@ -21,21 +21,11 @@ import torch.nn as nn
 import yaml
 
 from smoltrain.model import CharCNN, encode_text
-from smoltrain.train import TextDataset, load_classes, stratified_split
+from smoltrain.train import TextDataset, load_classes, load_dataset, stratified_split
 
 
 def _step(n: int, name: str) -> None:
     print(f"\n=== Step {n}: {name} ===")
-
-
-def _load_jsonl(path: str) -> list[dict]:
-    records = []
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-    return records
 
 
 def main(argv=None) -> None:
@@ -84,7 +74,7 @@ def main(argv=None) -> None:
     _step(2, "Merge")
     all_records: list[dict] = []
     for f in data_files:
-        recs = _load_jsonl(str(f))
+        recs = load_dataset(str(f))
         print(f"  {f}: {len(recs)} records")
         all_records.extend(recs)
     dist = Counter(r["label"] for r in all_records)
@@ -173,7 +163,7 @@ def main(argv=None) -> None:
 
     # -------------------------------------------------------------------------
     _step(4, "Eval")
-    eval_records = _load_jsonl(str(eval_path))
+    eval_records = load_dataset(str(eval_path))
     print(f"Eval set: {len(eval_records)} records from {eval_path}")
 
     model.eval()
@@ -227,24 +217,21 @@ def main(argv=None) -> None:
     warnings.filterwarnings("ignore", category=FutureWarning)
     for _logger_name in ("torch.onnx", "torch.onnx._internal", "torch.onnx._internal.exporter"):
         logging.getLogger(_logger_name).setLevel(logging.ERROR)
-    # torch.onnx writes progress to stdout — redirect to devnull during export
-    import os as _os
-    _devnull = open(_os.devnull, "w")
-    _old_stdout, _old_stderr = sys.stdout, sys.stderr
-    sys.stdout, sys.stderr = _devnull, _devnull
-    try:
-        torch.onnx.export(
-            model,
-            dummy,
-            str(onnx_path),
-            input_names=["input_ids"],
-            output_names=["logits"],
-            dynamic_axes={"input_ids": {0: "batch"}, "logits": {0: "batch"}},
-            opset_version=18,
-        )
-    finally:
-        sys.stdout, sys.stderr = _old_stdout, _old_stderr
-        _devnull.close()
+    # torch.onnx writes noise to stdout — redirect during export
+    with open(os.devnull, "w") as devnull:
+        sys.stdout, sys.stderr = devnull, devnull
+        try:
+            torch.onnx.export(
+                model,
+                dummy,
+                str(onnx_path),
+                input_names=["input_ids"],
+                output_names=["logits"],
+                dynamic_axes={"input_ids": {0: "batch"}, "logits": {0: "batch"}},
+                opset_version=18,
+            )
+        finally:
+            sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__
     onnx_size_kb = onnx_path.stat().st_size / 1024
     print(f"ONNX -> {onnx_path}  ({onnx_size_kb:.1f} KB)")
     onnx_data_path = Path(str(onnx_path) + ".data")
